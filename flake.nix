@@ -29,7 +29,7 @@
             owner = "Spencer0187";
             repo = "Spencer-Macro-Utilities";
             rev = "7105b1c";
-            sha256 = "sha256-URGDFzlOChviKdo34SwfDD2eoE0AQe5gHU2k9mj7FdU=";
+            sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
           };
 
           nativeBuildInputs = with pkgs; [
