@@ -103,7 +103,6 @@ EOF
         };
       })
     // {
-      # FIX 1: top-level nixos module
       nixosModules.default = import ./module.nix;
     };
 }
