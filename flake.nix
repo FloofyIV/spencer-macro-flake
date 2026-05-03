@@ -75,14 +75,13 @@ EOF
             chmod +x $out/bin/suspend
 mkdir -p $out/share/pixmaps
 cp $src/public/favicon.ico $out/share/pixmaps/suspend.ico
-Icon=$out/share/pixmaps/suspend.ico
 mkdir -p $out/share/applications
             cat > $out/share/applications/suspend.desktop <<EOF
 [Desktop Entry]
 Type=Application
 Name=Spencer Macro Utilities
 Exec=$out/bin/suspend %u
-Icon=system-run
+Icon=$out/share/pixmaps/suspend.ico
 Comment=Launch Spencer Macro Utilities
 Categories=Utility;
 Terminal=false
