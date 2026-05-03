@@ -1,0 +1,96 @@
+{
+  description = "Spencer Macro Utilities";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+
+  outputs = { self, nixpkgs, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+
+        runtimeLibs = with pkgs; [
+          alsa-lib pulseaudio libjack2 sndio
+          libX11 libXext libXrandr libXcursor
+          libXfixes libXi libXScrnSaver libXtst
+          libxkbcommon libdrm libxcb-util libxcb
+          mesa dbus ibus udev libthai fribidi
+          libglvnd libgbm
+        ];
+      in
+      {
+        packages.default = pkgs.stdenv.mkDerivation {
+          pname = "suspend";
+          version = "3.2.2";
+
+          src = pkgs.fetchFromGitHub {
+            owner = "Spencer0187";
+            repo = "Spencer-Macro-Utilities";
+            rev = "a74529e";
+            sha256 = "sha256-URGDFzlOChviKdo34SwfDD2eoE0AQe5gHU2k9mj7FdU=";
+          };
+
+          nativeBuildInputs = with pkgs; [
+            cmake ninja pkg-config makeWrapper
+          ];
+
+          buildInputs = runtimeLibs;
+
+          cmakeFlags = [
+            "-DCMAKE_BUILD_TYPE=Release"
+            "-DCMAKE_INSTALL_PREFIX=${placeholder "out"}"
+          ];
+
+          postInstall = ''
+            mkdir -p $out/bin
+
+            if [ -f $out/suspend ]; then
+              chmod +x $out/suspend
+            fi
+
+            cat > $out/run.sh <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR=$(cd "$(dirname "$0")" && pwd)
+export LD_LIBRARY_PATH="$APP_DIR/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+exec "$APP_DIR/suspend" "$@"
+EOF
+
+            chmod +x $out/run.sh
+
+            cat > $out/bin/suspend <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+REAL_RUN="$BASE_DIR/run.sh"
+
+exec "$REAL_RUN" "$@"
+EOF
+
+            chmod +x $out/bin/suspend
+          '';
+
+          postFixup = ''
+            wrapProgram $out/suspend \
+              --set LD_LIBRARY_PATH "${pkgs.lib.makeLibraryPath runtimeLibs}"
+          '';
+
+          meta = {
+            mainProgram = "suspend";
+          };
+        };
+
+        apps.default = flake-utils.lib.mkApp {
+          drv = self.packages.${system}.default;
+        };
+      })
+    // {
+      # FIX 1: top-level nixos module
+      nixosModules.default = import ./module.nix;
+    };
+}
