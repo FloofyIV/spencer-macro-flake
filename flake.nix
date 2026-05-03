@@ -73,6 +73,9 @@ exec "$REAL_RUN" "$@"
 EOF
 
             chmod +x $out/bin/suspend
+mkdir -p $out/share/pixmaps
+cp $src/public/favicon.ico $out/share/pixmaps/suspend.ico
+Icon=$out/share/pixmaps/suspend.ico
 mkdir -p $out/share/applications
             cat > $out/share/applications/suspend.desktop <<EOF
 [Desktop Entry]
