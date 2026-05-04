@@ -1,6 +1,8 @@
 name: Update flake source
 
 on:
+  schedule:
+    - cron: "0 3 * * *" # daily
   workflow_dispatch:
 
 jobs:
@@ -19,17 +21,21 @@ jobs:
           rev=$(git ls-remote https://github.com/Spencer0187/Spencer-Macro-Utilities HEAD | cut -f1)
           echo "rev=$rev" >> $GITHUB_OUTPUT
 
-      - name: Prefetch hash
+      - name: Prefetch hash (modern way)
         id: prefetch
         run: |
-          nix run nixpkgs#nix-prefetch-github -- Spencer0187 Spencer-Macro-Utilities --rev ${{ steps.commit.outputs.rev }} > prefetch.json
-          sha=$(jq -r .sha256 prefetch.json)
+          url="https://github.com/Spencer0187/Spencer-Macro-Utilities/archive/${{ steps.commit.outputs.rev }}.tar.gz"
+          echo "Fetching $url"
+          sha=$(nix store prefetch-file --json "$url" | jq -r .hash)
           echo "sha256=$sha" >> $GITHUB_OUTPUT
 
       - name: Update flake
         run: |
           sed -i 's/rev = ".*"/rev = "${{ steps.commit.outputs.rev }}"/' flake.nix
           sed -i 's/sha256 = ".*"/sha256 = "${{ steps.prefetch.outputs.sha256 }}"/' flake.nix
+
+      - name: Build to verify
+        run: nix build .#
 
       - name: Commit & PR
         uses: peter-evans/create-pull-request@v6
