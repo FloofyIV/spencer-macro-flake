@@ -19,12 +19,16 @@ jobs:
           rev=$(git ls-remote https://github.com/Spencer0187/Spencer-Macro-Utilities HEAD | cut -f1)
           echo "rev=$rev" >> $GITHUB_OUTPUT
 
-      - name: Prefetch hash (modern way)
+      - name: Prefetch hash (correct for fetchFromGitHub)
         id: prefetch
         run: |
-          url="https://github.com/Spencer0187/Spencer-Macro-Utilities/archive/${{ steps.commit.outputs.rev }}.tar.gz"
+          rev=${{ steps.commit.outputs.rev }}
+          url="https://github.com/Spencer0187/Spencer-Macro-Utilities/archive/$rev.tar.gz"
           echo "Fetching $url"
-          sha=$(nix store prefetch-file --json "$url" | jq -r .hash)
+
+          raw=$(nix-prefetch-url --unpack "$url")
+          sha=$(nix hash to-sri --type sha256 "$raw")
+
           echo "sha256=$sha" >> $GITHUB_OUTPUT
 
       - name: Update flake
