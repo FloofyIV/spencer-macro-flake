@@ -1,0 +1,39 @@
+name: Update flake source
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+
+      - name: Get latest commit
+        id: commit
+        run: |
+          rev=$(git ls-remote https://github.com/Spencer0187/Spencer-Macro-Utilities HEAD | cut -f1)
+          echo "rev=$rev" >> $GITHUB_OUTPUT
+
+      - name: Prefetch hash
+        id: prefetch
+        run: |
+          nix run nixpkgs#nix-prefetch-github -- Spencer0187 Spencer-Macro-Utilities --rev ${{ steps.commit.outputs.rev }} > prefetch.json
+          sha=$(jq -r .sha256 prefetch.json)
+          echo "sha256=$sha" >> $GITHUB_OUTPUT
+
+      - name: Update flake
+        run: |
+          sed -i 's/rev = ".*"/rev = "${{ steps.commit.outputs.rev }}"/' flake.nix
+          sed -i 's/sha256 = ".*"/sha256 = "${{ steps.prefetch.outputs.sha256 }}"/' flake.nix
+
+      - name: Commit & PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "Update Spencer-Macro-Utilities"
+          title: "Update Spencer-Macro-Utilities to latest commit"
+          body: "Automated update"
