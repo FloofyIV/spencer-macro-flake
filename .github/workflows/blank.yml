@@ -29,8 +29,8 @@ jobs:
 
       - name: Update flake
         run: |
-          sed -i 's/rev = ".*"/rev = "${{ steps.commit.outputs.rev }}"/' flake.nix
-          sed -i 's/sha256 = ".*"/sha256 = "${{ steps.prefetch.outputs.sha256 }}"/' flake.nix
+          sed -i 's|rev = ".*"|rev = "${{ steps.commit.outputs.rev }}"|' flake.nix
+          sed -i 's|sha256 = ".*"|sha256 = "${{ steps.prefetch.outputs.sha256 }}"|' flake.nix
 
       - name: Build to verify
         run: nix build .#
