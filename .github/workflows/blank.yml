@@ -1,8 +1,6 @@
 name: Update flake source
 
 on:
-  schedule:
-    - cron: "0 3 * * *" # daily
   workflow_dispatch:
 
 jobs:
