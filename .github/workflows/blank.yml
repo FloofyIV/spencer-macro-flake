@@ -39,9 +39,7 @@ jobs:
       - name: Build to verify
         run: nix build .#
 
-      - name: Commit & PR
-        uses: peter-evans/create-pull-request@v6
+      - name: Update flake.nix
+        uses: actions/upload-artifact@v4
         with:
-          commit-message: "Update Spencer-Macro-Utilities"
-          title: "Update Spencer-Macro-Utilities to latest commit"
-          body: "Automated update"
+          name: flake.nix
