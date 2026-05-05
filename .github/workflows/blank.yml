@@ -39,7 +39,10 @@ jobs:
       - name: Build to verify
         run: nix build .#
 
-      - name: Update flake.nix
-        uses: actions/upload-artifact@v4
-        with:
-          name: flake.nix
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add flake.nix
+          git commit -m "Update flake source to ${{ steps.commit.outputs.rev }}"
+          git push
