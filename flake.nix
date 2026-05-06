@@ -128,7 +128,7 @@ EOF
         };
 
         apps.default = flake-utils.lib.mkApp {
-          drv = self.packages.${system}.default;
+          drv = self.packages.${stdenv.hostPlatform.system}.default;
         };
       })
     // {
