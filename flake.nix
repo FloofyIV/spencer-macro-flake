@@ -12,12 +12,31 @@
         pkgs = import nixpkgs { inherit system; };
 
         runtimeLibs = with pkgs; [
-          alsa-lib pulseaudio libjack2 sndio
-          libX11 libXext libXrandr libXcursor
-          libXfixes libXi libXScrnSaver libXtst
-          libxkbcommon libdrm libxcb-util libxcb
-          mesa dbus ibus udev libthai fribidi
-          libglvnd libgbm
+          stdenv.cc.cc.lib
+          alsa-lib
+          pulseaudio
+          libjack2
+          sndio
+          libX11
+          libXext
+          libXrandr
+          libXcursor
+          libXfixes
+          libXi
+          libXScrnSaver
+          libXtst
+          libxkbcommon
+          libdrm
+          libxcb-util
+          libxcb
+          mesa
+          dbus
+          ibus
+          udev
+          libthai
+          fribidi
+          libglvnd
+          libgbm
         ];
       in
       {
@@ -33,50 +52,61 @@
           };
 
           nativeBuildInputs = with pkgs; [
-            cmake ninja pkg-config makeWrapper
+            cmake
+            ninja
+            pkg-config
+            makeWrapper
+            patchelf
           ];
 
           buildInputs = runtimeLibs;
 
           cmakeFlags = [
             "-DCMAKE_BUILD_TYPE=Release"
-            "-DCMAKE_INSTALL_PREFIX=${placeholder "out"}"
+            "-DSMU_BUNDLE_SDL3=ON"
+            "-DSMU_LINK_SDL3_STATIC=OFF"
           ];
 
-          postInstall = ''
-            mkdir -p $out/bin
+          buildPhase = ''
+            runHook preBuild
+            cmake --build . --target package-linux-dir --parallel $NIX_BUILD_CORES
+            runHook postBuild
+          '';
 
-            if [ -f $out/suspend ]; then
-              chmod +x $out/suspend
+          installPhase = ''
+            runHook preInstall
+
+            local pkgDir="SpencerMacroUtilities"
+            local runtimeLibPath="${pkgs.lib.makeLibraryPath runtimeLibs}"
+
+            mkdir -p "$out/bin" "$out/share/suspend"
+
+            install -m755 "$pkgDir/suspend" "$out/share/suspend/suspend"
+            patchelf --remove-rpath "$out/share/suspend/suspend"
+            patchelf --set-rpath "$runtimeLibPath:$out/share/suspend/lib" \
+              "$out/share/suspend/suspend"
+
+            cp -r "$pkgDir/assets" "$out/share/suspend/assets"
+
+            if [ -d "$pkgDir/lib" ]; then
+              cp -r "$pkgDir/lib" "$out/share/suspend/lib"
             fi
 
-            cat > $out/run.sh <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
+            for f in run.sh LINUX_SETUP.md; do
+              [ -f "$pkgDir/$f" ] && install -m755 "$pkgDir/$f" "$out/share/suspend/$f"
+            done
+            if [ -d "$pkgDir/scripts" ]; then
+              cp -r "$pkgDir/scripts" "$out/share/suspend/scripts"
+            fi
 
-APP_DIR=$(cd "$(dirname "$0")" && pwd)
-export LD_LIBRARY_PATH="$APP_DIR/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+            makeWrapper "$out/share/suspend/suspend" "$out/bin/suspend" \
+              --chdir "$out/share/suspend" \
+              --set LD_LIBRARY_PATH "$runtimeLibPath:$out/share/suspend/lib"
 
-exec "$APP_DIR/suspend" "$@"
-EOF
+            mkdir -p "$out/share/pixmaps" "$out/share/applications"
+            cp "$src/public/favicon.ico" "$out/share/pixmaps/suspend.ico"
 
-            chmod +x $out/run.sh
-
-            cat > $out/bin/suspend <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-
-BASE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-REAL_RUN="$BASE_DIR/run.sh"
-
-exec "$REAL_RUN" "$@"
-EOF
-
-            chmod +x $out/bin/suspend
-mkdir -p $out/share/pixmaps
-cp $src/public/favicon.ico $out/share/pixmaps/suspend.ico
-mkdir -p $out/share/applications
-            cat > $out/share/applications/suspend.desktop <<EOF
+            cat > "$out/share/applications/suspend.desktop" << EOF
 [Desktop Entry]
 Type=Application
 Name=Spencer Macro Utilities
@@ -87,16 +117,14 @@ Categories=Utility;
 Terminal=false
 EOF
 
-            chmod 644 $out/share/applications/suspend.desktop
+            runHook postInstall
           '';
 
-          postFixup = ''
-            wrapProgram $out/suspend \
-              --set LD_LIBRARY_PATH "${pkgs.lib.makeLibraryPath runtimeLibs}"
-          '';
-
-          meta = {
+          meta = with pkgs.lib; {
+            description = "Spencer Macro Utilities";
             mainProgram = "suspend";
+            platforms = platforms.linux;
+            license = licenses.gpl3Only;
           };
         };
 
