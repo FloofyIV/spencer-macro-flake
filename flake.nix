@@ -92,9 +92,8 @@
               cp -r "$pkgDir/lib" "$out/share/suspend/lib"
             fi
 
-            for f in run.sh LINUX_SETUP.md; do
-              [ -f "$pkgDir/$f" ] && install -m755 "$pkgDir/$f" "$out/share/suspend/$f"
-            done
+            [ -f "$pkgDir/LINUX_SETUP.md" ] && cp "$pkgDir/LINUX_SETUP.md" "$out/share/suspend/LINUX_SETUP.md"
+
             if [ -d "$pkgDir/scripts" ]; then
               cp -r "$pkgDir/scripts" "$out/share/suspend/scripts"
             fi
