@@ -28,8 +28,8 @@
           src = pkgs.fetchFromGitHub {
             owner = "Spencer0187";
             repo = "Spencer-Macro-Utilities";
-            rev = "93151b5f8f442e8868a69d8216ecd3e4f3e8bdb5";
-            sha256 = "sha256-AdS5ieLW+cjTAZw/hdayJqhDlk0dTDblC+uPbVamUnc=";
+            rev = "27106f3d7e94ef7003d6ae4b678b80e3759e0cdd";
+            sha256 = "sha256-cFmNHpronbIOFje1SooUkQxELh2MMmtEcXdjctb/TLw=";
           };
 
           nativeBuildInputs = with pkgs; [
