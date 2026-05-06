@@ -33,3 +33,10 @@ add the smu service to your configuration.nix:
   services.smu.enable = true;
 }
 ```
+
+# how to update:
+```
+cd /etc/nixos
+sudo nix flake update smu
+sudo nixos-rebuild switch --flake /etc/nixos#$HOSTNAME
+```
