@@ -48,7 +48,7 @@
             owner = "Spencer0187";
             repo = "Spencer-Macro-Utilities";
             rev = "linux-lagswitch-native";
-            sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+            sha256 = "sha256-E3Bn25xmURP40Q5uhWuUy1aTqaM/ebku6uOSaS/3jOw=";
           };
 
           nativeBuildInputs = with pkgs; [
