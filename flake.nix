@@ -42,7 +42,7 @@
       {
         packages.default = pkgs.stdenv.mkDerivation {
           pname = "suspend";
-          version = "3.2.2";
+          version = "3.2.1";
 
           src = pkgs.fetchFromGitHub {
             owner = "Spencer0187";
