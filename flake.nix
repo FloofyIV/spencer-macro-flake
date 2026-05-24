@@ -61,7 +61,6 @@
 
           buildInputs = runtimeLibs;
 
-          # Fix Go sandbox cache issues in Nix builds
           HOME = "/tmp";
           GOCACHE = "/tmp/go-cache";
 
@@ -80,9 +79,11 @@
 
             mkdir -p "$GOCACHE"
 
+            cd "$src/platform/linux/nethelper"
             GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build \
-              -o nethelper \
-              "$src/platform/linux/nethelper/nethelper.go"
+              -o "$TMPDIR/nethelper" \
+              .
+            cd -
 
             runHook postBuild
           '';
@@ -103,7 +104,7 @@
               "$runtimeLibPath:$out/share/suspend/lib" \
               "$out/share/suspend/suspend"
 
-            install -m755 nethelper "$out/share/suspend/nethelper"
+            install -m755 "$TMPDIR/nethelper" "$out/share/suspend/nethelper"
 
             cp -r "$pkgDir/assets" "$out/share/suspend/assets"
 
@@ -112,35 +113,34 @@
             fi
 
             if [ -f "$pkgDir/LINUX_SETUP.md" ]; then
-              cp "$pkgDir/LINUX_SETUP.md" \
-                "$out/share/suspend/LINUX_SETUP.md"
+              cp "$pkgDir/LINUX_SETUP.md" "$out/share/suspend/LINUX_SETUP.md"
             fi
 
             if [ -d "$pkgDir/scripts" ]; then
-              cp -r "$pkgDir/scripts" \
-                "$out/share/suspend/scripts"
+              cp -r "$pkgDir/scripts" "$out/share/suspend/scripts"
             fi
 
-            cat > "$out/bin/suspend" << EOF
-#!${pkgs.bash}/bin/bash
+            cat > "$out/bin/suspend" << 'LAUNCHER'
+#!/usr/bin/env bash
 set -euo pipefail
 
-NETHELPER="$out/share/suspend/nethelper"
-NETHELPER_TMP="/tmp/nethelper-\$USER"
+NETHELPER_TMP="/tmp/nethelper-$(id -u)"
 
-if ! pgrep -f "\$NETHELPER_TMP" >/dev/null 2>&1; then
-  rm -f "\$NETHELPER_TMP"
-  cp "\$NETHELPER" "\$NETHELPER_TMP"
-  chmod +x "\$NETHELPER_TMP"
-  pkexec "\$NETHELPER_TMP" &
+if ! pgrep -f "$NETHELPER_TMP" >/dev/null 2>&1; then
+  rm -f "$NETHELPER_TMP"
+  cp "@out@/share/suspend/nethelper" "$NETHELPER_TMP"
+  chmod +x "$NETHELPER_TMP"
+  pkexec "$NETHELPER_TMP" &
 fi
 
-export LD_LIBRARY_PATH="$runtimeLibPath:$out/share/suspend/lib"
+export LD_LIBRARY_PATH="@runtimeLibPath@:@out@/share/suspend/lib"
+cd "@out@/share/suspend"
+exec "@out@/share/suspend/suspend" "$@"
+LAUNCHER
 
-cd "$out/share/suspend"
-
-exec "$out/share/suspend/suspend" "\$@"
-EOF
+            substituteInPlace "$out/bin/suspend" \
+              --replace "@out@" "$out" \
+              --replace "@runtimeLibPath@" "$runtimeLibPath"
 
             chmod 755 "$out/bin/suspend"
 
