@@ -40,30 +40,26 @@
         ];
       in
       {
-        packages.default = pkgs.stdenv.mkDerivation rec {
+        packages.default = pkgs.stdenv.mkDerivation {
           pname = "suspend";
-          version = "3.2.1";
+          version = "3.2.2";
 
           src = pkgs.fetchFromGitHub {
             owner = "Spencer0187";
             repo = "Spencer-Macro-Utilities";
-            rev = "0905683faa5ea5aff141a97f6fd15477ed5d5bd6";
-            sha256 = "sha256-W+vK24V93YdpPI9LsPk01Wk5KQPzYQGmMM9s+pb/8Ss=";
+            rev = "c705ba92a385bd6834f34eb3dae0915fad9e6834";
+            sha256 = "sha256-moC0qUeL/i7Ta2mc70YOcMAvpFdgCRUujChxuHZ91Q8=";
           };
 
           nativeBuildInputs = with pkgs; [
             cmake
             ninja
             pkg-config
-            go
+            makeWrapper
             patchelf
           ];
 
           buildInputs = runtimeLibs;
-
-          # Fix Go sandbox cache issues in Nix builds
-          HOME = "/tmp";
-          GOCACHE = "/tmp/go-cache";
 
           cmakeFlags = [
             "-DCMAKE_BUILD_TYPE=Release"
@@ -73,17 +69,7 @@
 
           buildPhase = ''
             runHook preBuild
-
             cmake --build . --target package-linux-dir --parallel $NIX_BUILD_CORES
-
-            echo "Building nethelper (Go)..."
-
-            mkdir -p "$GOCACHE"
-
-            GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build \
-              -o nethelper \
-              "$src/platform/linux/nethelper/nethelper.go"
-
             runHook postBuild
           '';
 
@@ -96,14 +82,9 @@
             mkdir -p "$out/bin" "$out/share/suspend"
 
             install -m755 "$pkgDir/suspend" "$out/share/suspend/suspend"
-
             patchelf --remove-rpath "$out/share/suspend/suspend"
-
-            patchelf --set-rpath \
-              "$runtimeLibPath:$out/share/suspend/lib" \
+            patchelf --set-rpath "$runtimeLibPath:$out/share/suspend/lib" \
               "$out/share/suspend/suspend"
-
-            install -m755 nethelper "$out/share/suspend/nethelper"
 
             cp -r "$pkgDir/assets" "$out/share/suspend/assets"
 
@@ -111,45 +92,18 @@
               cp -r "$pkgDir/lib" "$out/share/suspend/lib"
             fi
 
-            if [ -f "$pkgDir/LINUX_SETUP.md" ]; then
-              cp "$pkgDir/LINUX_SETUP.md" \
-                "$out/share/suspend/LINUX_SETUP.md"
-            fi
+            [ -f "$pkgDir/LINUX_SETUP.md" ] && cp "$pkgDir/LINUX_SETUP.md" "$out/share/suspend/LINUX_SETUP.md"
 
             if [ -d "$pkgDir/scripts" ]; then
-              cp -r "$pkgDir/scripts" \
-                "$out/share/suspend/scripts"
+              cp -r "$pkgDir/scripts" "$out/share/suspend/scripts"
             fi
 
-            cat > "$out/bin/suspend" << EOF
-#!${pkgs.bash}/bin/bash
-set -euo pipefail
+            makeWrapper "$out/share/suspend/suspend" "$out/bin/suspend" \
+              --chdir "$out/share/suspend" \
+              --set LD_LIBRARY_PATH "$runtimeLibPath:$out/share/suspend/lib"
 
-NETHELPER="$out/share/suspend/nethelper"
-NETHELPER_TMP="/tmp/nethelper-\$USER"
-
-if ! pgrep -f "\$NETHELPER_TMP" >/dev/null 2>&1; then
-  rm -f "\$NETHELPER_TMP"
-  cp "\$NETHELPER" "\$NETHELPER_TMP"
-  chmod +x "\$NETHELPER_TMP"
-  pkexec "\$NETHELPER_TMP" &
-fi
-
-export LD_LIBRARY_PATH="$runtimeLibPath:$out/share/suspend/lib"
-
-cd "$out/share/suspend"
-
-exec "$out/share/suspend/suspend" "\$@"
-EOF
-
-            chmod 755 "$out/bin/suspend"
-
-            mkdir -p \
-              "$out/share/pixmaps" \
-              "$out/share/applications"
-
-            cp "$src/public/favicon.ico" \
-              "$out/share/pixmaps/suspend.ico"
+            mkdir -p "$out/share/pixmaps" "$out/share/applications"
+            cp "$src/public/favicon.ico" "$out/share/pixmaps/suspend.ico"
 
             cat > "$out/share/applications/suspend.desktop" << EOF
 [Desktop Entry]
