@@ -30,7 +30,7 @@ add the smu service to your configuration.nix:
 { ... }:
 
 {
-  services.smu.enable = true;
+  services.smu.enable = true; # this gives smu the required permissions for monitoring global input
 }
 ```
 
