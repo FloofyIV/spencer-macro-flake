@@ -47,8 +47,8 @@
           src = pkgs.fetchFromGitHub {
             owner = "Spencer0187";
             repo = "Spencer-Macro-Utilities";
-	    rev = "linux-lagswitch-native";
-            sha256 = "sha256-uUVo4W6Ajncwb1RzAK9MotWGSV+p/ELMqqFr1vP1uCU=";
+	    rev = "e77bffd868d3a5f54f4fd6c04b499714cfa6a222";
+            sha256 = "sha256-B19uw7KiAkKUdBsf9TeTwWIUZPYpEcs6Q0Sd94GFKvY=";
           };
 
           nativeBuildInputs = with pkgs; [
