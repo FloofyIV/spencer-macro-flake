@@ -25,6 +25,9 @@ add the flake to your flake.nix:
 }
 ```
 
+# !! you may also need to add this if the nethelper daemon fails to start or prompt root access!!
+# ``security.polkit.enablePkexecWrapper = true;``
+
 add the smu service to your configuration.nix:
 ```
 { ... }:
